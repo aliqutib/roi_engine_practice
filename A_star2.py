@@ -3,7 +3,7 @@ import heapq
 import matplotlib.pyplot as plt
 
 # Define world
-
+#budget: available channel
 G = nx.Graph()
 G.add_edge('Oradea', 'Zerind', weight=71)
 G.add_edge('Oradea', 'Sibiu', weight=151)
@@ -91,4 +91,4 @@ def a_star (start, goal) :
 
     return path
         
-#print(a_star(START, GOAL))
+print(a_star(START, GOAL))
