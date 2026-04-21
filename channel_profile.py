@@ -41,7 +41,7 @@ class ChannelProfile:
         #applying saftey margin to make sure our algo never overestimate h(n)
         return self.avg_roi - (1-self.saftey_margin)
     
-def build_channel_profile(db) -> Dict[str, ChannelProfile]:
+def build_channel_profiles(db) -> Dict[str, ChannelProfile]:
 
     #This creates ChannelProfile Object for each channel in the database
     #Uses mongo db pipeline and aggragation with python stats
