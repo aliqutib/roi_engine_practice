@@ -28,4 +28,4 @@ def load_dataset_from_kaggle(csv_path:str, db) :
 client = MongoClient('mongodb://localhost:27017/')
 db = client['marketing_ai']
 
-#load_dataset_from_kaggle('marketing_campaign_dataset.csv', db) # <- uncomment once to load kaggle dataset into your mongo db
+# load_dataset_from_kaggle('marketing_campaign_dataset.csv', db) # <- uncomment once to load kaggle dataset into your mongo db

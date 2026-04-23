@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import statistics
+from typing import Dict
 
 #------
 from db import db

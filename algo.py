@@ -1,4 +1,4 @@
-from typing import FrozenSet, Dict, List
+from typing import FrozenSet, Dict, List, Tuple
 import heapq
 from search_node import SearchNode
 from channel_profile import ChannelProfile
