@@ -1,4 +1,4 @@
-from A_star import a_star
+from algo import a_star
 from hill_climb import hill_climb
 from channel_profile import build_channel_profiles
 from db import db
