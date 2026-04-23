@@ -9,6 +9,7 @@ class SearchNode:
     budget_used: float = field(compare=False)
     roi_acheived: float = field(compare=False)
     h_value: float = field(compare=False)
+    spend_per_channel: Dict[str, float] = field(compare=False, default_factory=dict)
 
     @property
     def f(self) -> float:

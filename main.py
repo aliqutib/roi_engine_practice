@@ -4,15 +4,15 @@ from channel_profile import build_channel_profiles
 from db import db
 
 
-MAX_BUDGET = 100000   # ← Change this to your marketing budget ($)
+MAX_BUDGET = 100000  # ← Change this to your marketing budget ($)
 
 
 # ── Step 1: A* picks the best channels ───────────────────────────────────
 best_channels, best_roi, budget_used = a_star(
     max_budget = MAX_BUDGET,
-    db         = db,
-    verbose    = True
+    db         = db
 )
+
 
 # ── Step 2: Build profiles for Hill Climbing ──────────────────────────────
 all_profiles = build_channel_profiles(db)

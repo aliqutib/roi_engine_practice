@@ -125,7 +125,7 @@ def hill_climb(
 
         if verbose:
             print(f"\n[Run {run + 1}]  {'Uniform start' if run == 0 else f'Random restart {run}'}")
-            print(f"  Starting ROI : ${current_roi:,.2f}")
+            print(f"  Starting ROI : {current_roi*100:,.2f}%")
 
         # Climb: keep moving to the best neighbour until no improvement
         for iteration in range(1000):
@@ -140,7 +140,7 @@ def hill_climb(
 
             if best_nb is None:  # no improvement found → local optimum
                 if verbose:
-                    print(f"  → Local optimum at iteration {iteration}. ROI = ${current_roi:,.2f}")
+                    print(f"  → Local optimum at iteration {iteration}. ROI = {current_roi*100:,.2f}%")
                 break
 
             current, current_roi = best_nb, best_nb_roi  # move uphill
@@ -155,7 +155,7 @@ def hill_climb(
         print("  HILL CLIMBING — OPTIMISED BUDGET ALLOCATION")
         print("=" * 55)
         print(f"  Total Budget      : ${total_budget:,.2f}")
-        print(f"  Expected Total ROI: ${best_roi:,.2f}")
+        print(f"  Expected Total ROI: {best_roi*100:,.2f}%")
         print("-" * 55)
         for ch, frac in sorted(best_state.allocations.items(), key=lambda x: x[1], reverse=True):
             print(f"  {ch:<20} {frac*100:5.1f}%  {'█' * int(frac * 40)}  ${frac * total_budget:,.0f}")
