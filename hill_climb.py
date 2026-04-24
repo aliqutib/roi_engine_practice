@@ -24,14 +24,17 @@ class AllocationState:
 # and less likely to consistently deliver their average ROI.
 # ─────────────────────────────────────────────────────────────────────────────
 
-def compute_total_roi(state: AllocationState, profiles: Dict[str, ChannelProfile]) -> float:
+def compute_total_roi(state: AllocationState, profiles: Dict[str, ChannelProfile], debug: bool = False) -> float:
     total = 0.0
+    if debug:
+        print(f"\n  Computing ROI for allocation (total_budget=${state.total_budget:,.0f}):")
     for channel, fraction in state.allocations.items():
         profile = profiles.get(channel)
         if profile:
-            risk_penalty   = 1 + profile.std_roi                            # higher std = bigger penalty
-            roi_per_dollar = profile.avg_roi / (profile.avg_cost * risk_penalty)
-            total += roi_per_dollar * (fraction * state.total_budget)       # ROI earned from this channel
+            spend = state.total_budget * fraction
+            roi = profile.roi_at_spend(spend)
+            total += roi
+            
     return total
 
 
@@ -104,14 +107,24 @@ def hill_climb(
     best_state: Optional[AllocationState] = None
     best_roi = float('-inf')
 
-    for run in range(1 + random_restarts):  # run 0 = uniform, runs 1..N = random
+    for run in range(1 + random_restarts):  # run 0 = ROI-weighted, runs 1..N = random
 
-        # Run 0: equal split across all channels (deterministic starting point)
+        # Run 0: ROI-weighted split (deterministic starting point favoring high-ROI channels)
         if run == 0:
-            n    = len(channels)
-            base = round(1.0 / n, 10)
-            alloc = {ch: base for ch in channels}
-            alloc[channels[0]] = round(1.0 - base * (n - 1), 10)  # fix float rounding
+            roi_per_dollars = {ch: profiles[ch].roi_per_dollar for ch in channels}
+            total_roi_score = sum(roi_per_dollars.values())
+            
+            if total_roi_score > 0:
+                # Allocate proportionally to ROI per dollar
+                alloc = {ch: round(roi_per_dollars[ch] / total_roi_score, 10) for ch in channels}
+                # Fix rounding errors
+                alloc[channels[0]] = round(1.0 - sum(alloc[ch] for ch in channels[1:]), 10)
+            else:
+                # Fallback to equal if all ROI scores are zero
+                n    = len(channels)
+                base = round(1.0 / n, 10)
+                alloc = {ch: base for ch in channels}
+                alloc[channels[0]] = round(1.0 - base * (n - 1), 10)
 
         # Run 1+: random split (helps escape local optima from run 0)
         else:
@@ -124,7 +137,7 @@ def hill_climb(
         current_roi = compute_total_roi(current, profiles)
 
         if verbose:
-            print(f"\n[Run {run + 1}]  {'Uniform start' if run == 0 else f'Random restart {run}'}")
+            print(f"\n[Run {run + 1}]  {'ROI-weighted start' if run == 0 else f'Random restart {run}'}")
             print(f"  Starting ROI : {current_roi*100:,.2f}%")
 
         # Climb: keep moving to the best neighbour until no improvement

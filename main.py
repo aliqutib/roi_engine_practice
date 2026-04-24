@@ -4,7 +4,7 @@ from channel_profile import build_channel_profiles
 from db import db
 
 
-MAX_BUDGET = 100000  # ← Change this to your marketing budget ($)
+MAX_BUDGET = 350000  # ← Change this to your marketing budget ($)
 
 
 # ── Step 1: A* picks the best channels ───────────────────────────────────
@@ -12,6 +12,7 @@ best_channels, best_roi, budget_used = a_star(
     max_budget = MAX_BUDGET,
     db         = db
 )
+
 
 
 # ── Step 2: Build profiles for Hill Climbing ──────────────────────────────
@@ -24,11 +25,14 @@ best_state, expected_roi = hill_climb(
     selected_channels = best_channels,
     all_profiles      = all_profiles,
     total_budget      = MAX_BUDGET,   # ← full budget, nothing wasted
-    max_alloc         = 0.25,         # max 25% per channel → spreads across all 6
-    verbose           = True
+    step              = 0.15,         # Larger steps for aggressive exploration
+    max_alloc         = 0.70,         # Allow up to 90% to single channel if ROI is best
+    random_restarts   = 10,           # More random restarts to escape local optima
+    verbose           = False
 )
 
 # ── Final Summary ──────────────────────────────────────────────────────────
 print("\nFINAL ALLOCATION:")
+print(f"ROI Expected: {round(expected_roi*100, -2)}%")
 for channel, fraction in sorted(best_state.allocations.items(), key=lambda x: x[1], reverse=True):
     print(f"  {channel}: {fraction * 100:.1f}%  → ${fraction * MAX_BUDGET:,.0f}")

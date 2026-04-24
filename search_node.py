@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import FrozenSet
+from typing import FrozenSet, Dict
 
 @dataclass(order=True)
 class SearchNode:
@@ -17,7 +17,7 @@ class SearchNode:
  
     @property
     def g(self) -> float:
-        return self.roi_so_far
+        return self.roi_acheived
  
     def label(self) -> str:
         return "{" + ", ".join(sorted(self.selected)) + "}"

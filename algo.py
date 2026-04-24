@@ -194,7 +194,6 @@ def a_star(
             current.selected,
             frozenset((channel, spend) for channel, spend in current.spend_per_channel.items())
             )
-        
 
         if node_state in explored:
             continue
@@ -230,6 +229,7 @@ def a_star(
                 
                 # Check if we can spend more (headroom bounded by max_cost)
                 headroom = profile.max_cost - current_spend
+
                 if headroom <= 0:
                     continue  # Already at max spend for this channel
 
@@ -290,6 +290,7 @@ def a_star(
     print(f"  Budget used:      ${best_complete.budget_used:,.0f} / ${max_budget:,.0f}")
     unspent = max_budget - best_complete.budget_used
     print(f"  Unspent budget:   ${unspent:,.0f} ({unspent/max_budget*100:.1f}%)")
+    print(f"  Spend per Channel A* : {best_complete.spend_per_channel}")
     print("=" * 60)
 
     return best_complete.selected, best_complete.roi_acheived, best_complete.budget_used

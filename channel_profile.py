@@ -61,7 +61,7 @@ class ChannelProfile:
             return 0.0
         
         scale = spend / self.avg_cost
-        scaled_roi = self.avg_roi * math.log1p(scale) / math.log(2)
+        scaled_roi = self.avg_roi * math.log2(1 + scale)
         return scaled_roi * (1.0 - self.saftey_margin)
     
 def build_channel_profiles(db) -> Dict[str, ChannelProfile]:
@@ -98,8 +98,8 @@ def build_channel_profiles(db) -> Dict[str, ChannelProfile]:
     for doc in raw_results:
         channel_name = doc["_id"]
         roi_values = doc["roi_values"]
-        cost_values = doc["cost_values"]
-
+        cost_values = sorted(doc["cost_values"])
+        
         avg_cost = statistics.mean(cost_values)
         avg_roi = statistics.mean(roi_values)
         std_roi = statistics.stdev(roi_values) if len(roi_values) > 1 else avg_roi*0.10
@@ -120,5 +120,3 @@ def build_channel_profiles(db) -> Dict[str, ChannelProfile]:
         )
 
     return profiles
-
-

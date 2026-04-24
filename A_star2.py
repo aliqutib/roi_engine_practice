@@ -45,10 +45,10 @@ attr = {
 nx.set_node_attributes(G, attr)
 
 #subax1 = plt.subplot(121)
-nx.draw(G, with_labels=True, font_weight='bold')
-#subax2 = plt.subplot(122)
-#nx.draw_shell(G, with_labels=True, font_weight='bold')
-plt.show()
+# nx.draw(G, with_labels=True, font_weight='bold')
+# #subax2 = plt.subplot(122)
+# #nx.draw_shell(G, with_labels=True, font_weight='bold')
+# plt.show()
 
 START = 'Lugoj '
 GOAL = 'Bucharest'
@@ -90,5 +90,21 @@ def a_star (start, goal) :
             heapq.heappush(frontier, (f_score(current, next=neighbor), neighbor))
 
     return path
-        
-print(a_star(START, GOAL))
+
+import math
+
+def roi_at_spend(spend:float, avg_cost:float, avg_roi:float) -> float:
+    """
+        use diminishing return function (logarithmic) to 
+        calculate roi if campaign budget is icrease than
+        historically average cost of the campaign at specific channel
+    """
+
+    if spend <= 0 or avg_cost <= 0:
+        return 0.0
+    
+    scale = spend / avg_cost
+    scaled_roi = avg_roi * math.log1p(scale) / math.log(2)
+    return scaled_roi * (1.0 - 0.05)
+
+print(roi_at_spend(2000000, 11000, 1.54))
