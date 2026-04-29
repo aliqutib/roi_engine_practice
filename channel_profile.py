@@ -5,7 +5,7 @@ from typing import Dict
 
 #------
 from db import db
-
+from data import raw_res
 
 @dataclass
 class ChannelProfile:
@@ -151,9 +151,9 @@ def build_channel_profiles(db) -> Dict[str, ChannelProfile]:
     ]
 
     profiles = {}
-    raw_results = list(db.campaigns.aggregate(mongo_pipeline))
+    #raw_results = list(db.campaigns.aggregate(mongo_pipeline))
 
-    for doc in raw_results:
+    for doc in raw_res:
         channel_name = doc["_id"]
         roi_values = doc["roi_values"]
         cost_values = sorted(doc["cost_values"])
@@ -259,4 +259,3 @@ def search_channels(
         filtered[name] = profile
     
     return filtered
-

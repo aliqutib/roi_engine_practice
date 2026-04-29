@@ -29,8 +29,8 @@ def load_dataset_from_kaggle(csv_path: str, db):
     print(f'✅  {len(records)} records loaded into MongoDB (marketing_ai.campaigns)')
 
 
-client = MongoClient('mongodb://localhost:27017/')
-db = client['marketing_ai']
+#client = MongoClient('mongodb://localhost:27017/')
+#db = client['marketing_ai']
 
 
 # ── Run this file ONCE to load the dataset ────────────────────────────────
