@@ -14,7 +14,7 @@ from channel_profile import (
     rank_channels,
     search_channels,
 )
-from A_star import a_star
+from algo import a_star
 from hill_climb import hill_climb
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -202,17 +202,26 @@ def run_sensitivity(base_budget: float):
         b          = base_budget * multiplier
         channels, _, _ = a_star(max_budget=b, db=db, verbose=False)
         profiles   = build_channel_profiles(db)
-        _, roi     = hill_climb(
+        best_state, _ = hill_climb(
             selected_channels = channels,
             all_profiles      = profiles,
             total_budget      = b,
             max_alloc         = 0.25,
             verbose           = False,
         )
+        
+        # Apply diminishing returns function using roi_at_spend
+        expected_roi = 0.0
+        for ch, frac in best_state.allocations.items():
+            if ch in profiles:
+                spend = frac * b
+                roi_value = profiles[ch].roi_at_spend(spend)
+                expected_roi += roi_value
+        
         rows.append({
             "Budget"       : b,
             "Budget Label" : f"${b:,.0f}",
-            "Expected ROI" : roi,
+            "Expected ROI" : expected_roi,
             "Channels"     : len(channels),
             "Change"       : f"{((b - base_budget) / base_budget) * 100:+.0f}%",
         })
@@ -235,9 +244,9 @@ with st.sidebar:
     st.markdown("<div class='nav-label'>💰 Budget</div>", unsafe_allow_html=True)
     budget = st.slider(
         "Total Campaign Budget",
-        min_value = 20_000,
-        max_value = 200_000,
-        value     = 100_000,
+        min_value = 15_000,
+        max_value = 500_000,
+        value     = 75_000,
         step      = 5_000,
         format    = "$%d",
     )
@@ -330,10 +339,10 @@ st.markdown("<div class='section-title'>Key Performance Indicators</div>", unsaf
 
 c1, c2, c3, c4, c5 = st.columns(5)
 with c1: st.metric("💰 Total Budget",      f"${budget:,.0f}")
-with c2: st.metric("📈 Expected ROI",      f"${expected_roi:,.2f}")
+with c2: st.metric("📈 Expected ROI",      f"{expected_roi:,.2f}")
 with c3: st.metric("✅ Budget Used",       f"${budget_used:,.0f}", delta=f"{(budget_used/budget)*100:.0f}% utilised")
 with c4: st.metric("🎯 Channels Selected", len(best_channels))
-with c5: st.metric("💹 ROI Percentage",    f"{(expected_roi/budget)*100:.2f}%")
+#with c5: st.metric("💹 Revenue",    f"${(expected_roi*budget_used)+budget_used:.2f}")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -538,7 +547,7 @@ with col_chart:
         text          = sens_df["Expected ROI"].apply(lambda v: f"${v:,.2f}"),
         textposition  = "top center",
         textfont      = dict(color="#3b82f6", size=11),
-        hovertemplate = "<b>%{x}</b><br>Expected ROI: $%{y:,.2f}<extra></extra>",
+        hovertemplate = "<b>%{x}</b><br>Expected ROI: %{y:,.2f}<extra></extra>",
     ))
 
     # Mark current budget with a diamond
@@ -563,7 +572,7 @@ with col_chart:
         showlegend = False,
         xaxis      = dict(showgrid=False, color="#64748b", title="Budget Scenario"),
         yaxis      = dict(showgrid=True, gridcolor="#f1f5f9", color="#94a3b8",
-                          title="Expected ROI ($)", zeroline=False),
+                          title="Expected ROI", zeroline=False),
     )
     st.plotly_chart(fig_sens, use_container_width=True)
 
@@ -573,10 +582,10 @@ with col_info:
     base_roi  = base_rows["Expected ROI"].values[0] if not base_rows.empty else expected_roi
 
     st.metric("🏆 Best Budget",          best_s["Budget Label"])
-    st.metric("📈 Best Expected ROI",    f"${best_s['Expected ROI']:,.2f}")
+    st.metric("📈 Best Expected ROI",    f"{best_s['Expected ROI']:,.2f}")
     gain = best_s["Expected ROI"] - base_roi
-    if gain > 0:
-        st.metric("💡 Gain vs Current Budget", f"+${gain:,.2f}")
+    #if gain > 0:
+        #st.metric("💡 Gain vs Current Budget", f"+${gain:,.2f}")
 
     st.markdown("<br>", unsafe_allow_html=True)
 

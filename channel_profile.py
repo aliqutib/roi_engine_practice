@@ -50,6 +50,64 @@ class ChannelProfile:
         #applying saftey margin to make sure our algo never overestimate h(n)
         return self.avg_roi * (1 - self.saftey_margin)
     
+    @property
+    def avg_conversion(self) -> float:
+        """Return conversion rate as a decimal (0-1 range)"""
+        return self.avg_conv_rate
+    
+    @property
+    def total_campaigns(self) -> int:
+        """Total number of campaigns for this channel"""
+        return self.sample_count
+    
+    @property
+    def risk_score(self) -> float:
+        """
+        Risk score based on coefficient of variation (std_roi / avg_roi).
+        Normalized to 0-1 range where:
+        - 0 = very stable (low variance)
+        - 1 = very risky (high variance)
+        Uses sigmoid-like scaling: min(cv / 2.0, 1.0)
+        """
+        if self.avg_roi == 0:
+            return 0.5  # Medium risk for zero ROI channels
+        
+        cv = self.std_roi / self.avg_roi
+        # Normalize: cv of 2.0 or higher maps to 1.0 (high risk)
+        return min(cv / 2.0, 1.0)
+    
+    @property
+    def risk_label(self) -> str:
+        """
+        Categorize channel into risk tiers:
+        - ✅ Safe: risk_score < 0.33
+        - ⚠️ Moderate: 0.33 <= risk_score < 0.66
+        - 🔴 Risky: risk_score >= 0.66
+        """
+        score = self.risk_score
+        if score < 0.33:
+            return "✅ Safe"
+        elif score < 0.66:
+            return "⚠️ Moderate"
+        else:
+            return "🔴 Risky"
+    
+    @property
+    def best_case_roi(self) -> float:
+        """
+        Best-case ROI: average + 1 standard deviation
+        Represents optimistic scenario (upper bound)
+        """
+        return self.avg_roi + self.std_roi
+    
+    @property
+    def worst_case_roi(self) -> float:
+        """
+        Worst-case ROI: average - 1 standard deviation
+        Represents pessimistic scenario (lower bound)
+        """
+        return max(self.avg_roi - self.std_roi, 0.0)  # Floor at 0
+    
     def roi_at_spend(self, spend:float) -> float:
         """
             use diminishing return function (logarithmic) to 
@@ -120,3 +178,85 @@ def build_channel_profiles(db) -> Dict[str, ChannelProfile]:
         )
 
     return profiles
+
+
+def rank_channels(all_profiles: Dict[str, ChannelProfile]) -> list:
+    """
+    Rank channels by composite score.
+    
+    Composite Score = 50% ROI efficiency + 30% conversion rate + 20% conservative ROI
+    
+    Returns: List of tuples (rank, channel_name, composite_score) sorted by score descending
+    """
+    
+    if not all_profiles:
+        return []
+    
+    # Normalize each metric to 0-1 range
+    roi_per_dollar_values = [p.roi_per_dollar for p in all_profiles.values()]
+    conversion_rates = [p.avg_conversion for p in all_profiles.values()]
+    admissible_rois = [p.admissible_roi for p in all_profiles.values()]
+    
+    max_roi_per_dollar = max(roi_per_dollar_values) if roi_per_dollar_values else 1
+    max_conversion = max(conversion_rates) if conversion_rates else 1
+    max_admissible_roi = max(admissible_rois) if admissible_rois else 1
+    
+    scores = {}
+    for name, profile in all_profiles.items():
+        # Normalize each component to 0-1
+        roi_efficiency = profile.roi_per_dollar / max_roi_per_dollar if max_roi_per_dollar > 0 else 0
+        conversion_norm = profile.avg_conversion / max_conversion if max_conversion > 0 else 0
+        roi_norm = profile.admissible_roi / max_admissible_roi if max_admissible_roi > 0 else 0
+        
+        # Composite score
+        composite = (0.50 * roi_efficiency) + (0.30 * conversion_norm) + (0.20 * roi_norm)
+        scores[name] = composite
+    
+    # Sort by score descending and create ranked list
+    ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    return [(rank + 1, name, score) for rank, (name, score) in enumerate(ranked)]
+
+
+def search_channels(
+    all_profiles: Dict[str, ChannelProfile],
+    search_query: str = "",
+    risk_filter: str = "all",
+    min_roi: float = 0.0
+) -> Dict[str, ChannelProfile]:
+    """
+    Filter and search channels based on query and criteria.
+    
+    Args:
+        all_profiles: Dictionary of all channel profiles
+        search_query: String to match against channel name (case-insensitive)
+        risk_filter: Risk level filter ("all", "safe", "moderate", "risky")
+        min_roi: Minimum average ROI threshold
+    
+    Returns:
+        Dictionary of filtered profiles matching all criteria
+    """
+    
+    filtered = {}
+    
+    for name, profile in all_profiles.items():
+        # Check search query (substring match, case-insensitive)
+        if search_query and search_query.lower() not in name.lower():
+            continue
+        
+        # Check risk filter
+        if risk_filter != "all":
+            if risk_filter == "safe" and "Safe" not in profile.risk_label:
+                continue
+            elif risk_filter == "moderate" and "Moderate" not in profile.risk_label:
+                continue
+            elif risk_filter == "risky" and "Risky" not in profile.risk_label:
+                continue
+        
+        # Check minimum ROI threshold
+        if profile.avg_roi < min_roi:
+            continue
+        
+        filtered[name] = profile
+    
+    return filtered
+

@@ -1,3 +1,4 @@
 pymongo
 networkx
 matplotlib
+plotly
