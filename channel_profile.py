@@ -4,7 +4,7 @@ import math
 from typing import Dict
 
 #------
-from db import db
+#from db import db
 from data import raw_res
 
 @dataclass
